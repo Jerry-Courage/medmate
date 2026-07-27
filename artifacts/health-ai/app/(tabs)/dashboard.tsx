@@ -116,8 +116,8 @@ export default function DashboardScreen() {
         <View style={[styles.deviceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {[
             { name: 'Blood Pressure Monitor', model: 'BPM-3000', icon: 'heart-pulse', status: 'connected' },
-            { name: 'Smart Glucometer', model: 'GlucoSmart X1', icon: 'glucose', status: 'connected' },
-            { name: 'Pulse Oximeter', model: 'OxyCheck Pro', icon: 'lungs', status: 'idle' },
+            { name: 'Smart Glucometer', model: 'GlucoSmart X1', icon: 'needle', status: 'connected' },
+            { name: 'Pulse Oximeter', model: 'OxyCheck Pro', icon: 'water-percent', status: 'idle' },
           ].map((device, idx) => (
             <View key={device.name}>
               <View style={styles.deviceRow}>
