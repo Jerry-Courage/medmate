@@ -40,7 +40,7 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: `Hi! I'm Medmate, your personal AI health assistant.\n\nYour latest readings:\n  Blood Pressure: ${MOCK_READINGS.bp} mmHg\n  Heart Rate: ${MOCK_READINGS.hr} bpm\n  SpO2: ${MOCK_READINGS.spo2}%\n  Glucose: ${MOCK_READINGS.glucose} mg/dL\n\nAll your readings look healthy today. How can I help you?`,
+    content: `Hi! I'm Medmate, your personal AI health assistant.\n\nYour IoT devices aren't connected yet, but I'm here to chat, answer health questions, and help you understand your wellbeing.\n\nHow can I help you today?`,
     timestamp: new Date(),
   },
 ];
