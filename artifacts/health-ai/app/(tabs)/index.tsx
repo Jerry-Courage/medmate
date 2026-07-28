@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 interface Message {
   id: string;
@@ -24,36 +24,22 @@ interface Message {
   timestamp: Date;
 }
 
-const MOCK_READINGS = {
-  bp: '120/80',
-  hr: 72,
-  spo2: 98,
-  glucose: 95,
-};
+const MOCK_READINGS = { bp: '120/80', hr: 72, spo2: 98, glucose: 95 };
 
-const AI_RESPONSES = [
-  `Based on your latest readings, your blood pressure is ${MOCK_READINGS.bp} mmHg — that's within the healthy range. Your heart rate at ${MOCK_READINGS.hr} bpm is also normal. Keep up the great work!`,
-  `Your SpO2 is ${MOCK_READINGS.spo2}%, which is excellent oxygen saturation. I'd recommend maintaining your current activity level and hydration.`,
-  `Looking at your glucose level of ${MOCK_READINGS.glucose} mg/dL — this is in the normal fasting range. I suggest monitoring it after meals as well for a more complete picture.`,
-  `For someone with your current blood pressure reading, regular aerobic exercise (30 minutes, 5 days a week) and reducing sodium intake can help maintain healthy levels long-term.`,
-  `Your readings have been consistent. This stability is a positive sign. Would you like me to generate a weekly health summary report?`,
-  `Your resting heart rate trend is healthy. Consider tracking your heart rate variability (HRV) for deeper insights into your recovery and stress levels.`,
-];
-
-let responseIndex = 0;
-
-// Tab bar is 64px tall (position: absolute) — content must clear it
+// Tab bar is 64px tall (position: absolute)
 const TAB_BAR_HEIGHT = 64;
 
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+
 function genId() {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  return Date.now().toString() + Math.random().toString(36).slice(2, 9);
 }
 
 const INITIAL_MESSAGES: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: `Hello! I'm HealthAI, your personal health assistant. I have access to your latest IoT device readings:\n\n  Blood Pressure: ${MOCK_READINGS.bp} mmHg\n  Heart Rate: ${MOCK_READINGS.hr} bpm\n  SpO2: ${MOCK_READINGS.spo2}%\n  Glucose: ${MOCK_READINGS.glucose} mg/dL\n\nAll your readings look healthy today! How can I help you?`,
+    content: `Hi! I'm Medmate, your personal AI health assistant.\n\nYour latest readings:\n  Blood Pressure: ${MOCK_READINGS.bp} mmHg\n  Heart Rate: ${MOCK_READINGS.hr} bpm\n  SpO2: ${MOCK_READINGS.spo2}%\n  Glucose: ${MOCK_READINGS.glucose} mg/dL\n\nAll your readings look healthy today. How can I help you?`,
     timestamp: new Date(),
   },
 ];
@@ -68,33 +54,53 @@ export default function ChatScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  // Bottom pad must clear the absolute-positioned tab bar + home indicator
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom + TAB_BAR_HEIGHT;
 
-  async function sendMessage() {
+  const sendMessage = useCallback(async () => {
     const text = input.trim();
     if (!text || isTyping) return;
 
     const userMsg: Message = { id: genId(), role: 'user', content: text, timestamp: new Date() };
+
+    // Append user message and clear input immediately
     setMessages(prev => [userMsg, ...prev]);
     setInput('');
     setIsTyping(true);
-
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (Platform.OS !== 'web') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
     inputRef.current?.focus();
 
-    setTimeout(() => {
-      const aiMsg: Message = {
+    try {
+      // Build conversation history for context (oldest-first, user+assistant only)
+      const history = [...messages, userMsg]
+        .slice()
+        .reverse()
+        .map(m => ({ role: m.role, content: m.content }));
+
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history }),
+      });
+
+      const data = await res.json();
+      const reply: string = data.reply ?? data.error ?? 'Something went wrong. Please try again.';
+
+      const aiMsg: Message = { id: genId(), role: 'assistant', content: reply, timestamp: new Date() };
+      setMessages(prev => [aiMsg, ...prev]);
+    } catch {
+      const errMsg: Message = {
         id: genId(),
         role: 'assistant',
-        content: AI_RESPONSES[responseIndex % AI_RESPONSES.length],
+        content: 'I could not connect to the server. Please check your connection and try again.',
         timestamp: new Date(),
       };
-      responseIndex++;
-      setMessages(prev => [aiMsg, ...prev]);
+      setMessages(prev => [errMsg, ...prev]);
+    } finally {
       setIsTyping(false);
-    }, 1400);
-  }
+    }
+  }, [input, isTyping, messages]);
 
   function renderMessage({ item }: { item: Message }) {
     const isUser = item.role === 'user';
@@ -131,20 +137,10 @@ export default function ChatScreen() {
                 },
           ]}
         >
-          <Text
-            style={[
-              styles.bubbleText,
-              { color: isUser ? '#FFFFFF' : colors.foreground },
-            ]}
-          >
+          <Text style={[styles.bubbleText, { color: isUser ? '#FFFFFF' : colors.foreground }]}>
             {item.content}
           </Text>
-          <Text
-            style={[
-              styles.timestamp,
-              { color: isUser ? 'rgba(255,255,255,0.7)' : colors.mutedForeground },
-            ]}
-          >
+          <Text style={[styles.timestamp, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
             {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
@@ -154,7 +150,7 @@ export default function ChatScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
+      {/* ── Header ── */}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
         style={[styles.header, { paddingTop: topPad + 8 }]}
@@ -167,7 +163,7 @@ export default function ChatScreen() {
               contentFit="contain"
             />
             <View>
-              <Text style={styles.headerName}>HealthAI</Text>
+              <Text style={styles.headerName}>Medmate AI</Text>
               <View style={styles.onlineRow}>
                 <View style={styles.onlineDot} />
                 <Text style={styles.onlineText}>Online</Text>
@@ -186,12 +182,8 @@ export default function ChatScreen() {
         </View>
       </LinearGradient>
 
-      {/* Chat */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior="padding"
-        keyboardVerticalOffset={0}
-      >
+      {/* ── Chat ── */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
         <FlatList
           data={messages}
           keyExtractor={item => item.id}
@@ -210,12 +202,7 @@ export default function ChatScreen() {
                 <View
                   style={[
                     styles.bubble,
-                    {
-                      backgroundColor: '#FFFFFF',
-                      borderBottomLeftRadius: 4,
-                      borderWidth: 1.5,
-                      borderColor: colors.border,
-                    },
+                    { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderWidth: 1.5, borderColor: colors.border },
                   ]}
                 >
                   <View style={styles.typingDots}>
@@ -229,35 +216,18 @@ export default function ChatScreen() {
           }
         />
 
-        {/* Input bar — sits above the absolute tab bar */}
+        {/* ── Input bar ── */}
         <View
           style={[
             styles.inputBar,
-            {
-              backgroundColor: colors.background,
-              borderTopColor: colors.border,
-              paddingBottom: bottomPad,
-            },
+            { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: bottomPad },
           ]}
         >
-          <View
-            style={[
-              styles.inputWrap,
-              { backgroundColor: colors.muted, borderColor: colors.border },
-            ]}
-          >
-            <Ionicons
-              name="medical"
-              size={17}
-              color={colors.primary}
-              style={{ marginLeft: 4 }}
-            />
+          <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
+            <Ionicons name="medical" size={17} color={colors.primary} style={{ marginLeft: 4 }} />
             <TextInput
               ref={inputRef}
-              style={[
-                styles.textInput,
-                { color: colors.foreground, fontFamily: 'Inter_400Regular' },
-              ]}
+              style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}
               placeholder="Ask about your health..."
               placeholderTextColor={colors.mutedForeground}
               value={input}
@@ -272,19 +242,12 @@ export default function ChatScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.sendBtn,
-              {
-                backgroundColor: input.trim() ? colors.primary : colors.muted,
-                opacity: pressed ? 0.8 : 1,
-              },
+              { backgroundColor: input.trim() ? colors.primary : colors.muted, opacity: pressed ? 0.8 : 1 },
             ]}
             onPress={sendMessage}
             disabled={!input.trim() || isTyping}
           >
-            <Ionicons
-              name="send"
-              size={17}
-              color={input.trim() ? '#fff' : colors.mutedForeground}
-            />
+            <Ionicons name="send" size={17} color={input.trim() ? '#fff' : colors.mutedForeground} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -293,121 +256,45 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingBottom: 14 },
-  headerInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  root:         { flex: 1 },
+  header:       { paddingHorizontal: 16, paddingBottom: 14 },
+  headerInner:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerAvatar: { width: 40, height: 40, borderRadius: 20 },
-  headerName: {
-    color: '#fff',
-    fontSize: 16,
-    fontFamily: 'Inter_700Bold',
+  headerName:   { color: '#fff', fontSize: 16, fontFamily: 'Inter_700Bold' },
+  onlineRow:    { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
+  onlineDot:    { width: 7, height: 7, borderRadius: 4, backgroundColor: '#A7F3D0' },
+  onlineText:   { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontFamily: 'Inter_400Regular' },
+  headerRight:  { flexDirection: 'row', gap: 6 },
+  readingPill:  {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 12,
+    paddingHorizontal: 10, paddingVertical: 5,
   },
-  onlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 2,
+  readingPillText: { color: '#fff', fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  listContent:  { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10 },
+  msgRow:       { flexDirection: 'row', marginBottom: 14, maxWidth: '85%' },
+  msgRowUser:   { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
+  msgRowAI:     { alignSelf: 'flex-start' },
+  aiAvatar:     {
+    width: 30, height: 30, borderRadius: 15,
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: 8, alignSelf: 'flex-end',
   },
-  onlineDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#A7F3D0',
+  bubble:       { borderRadius: 20, paddingHorizontal: 15, paddingVertical: 11, maxWidth: '100%' },
+  bubbleText:   { fontSize: 14.5, fontFamily: 'Inter_400Regular', lineHeight: 21 },
+  timestamp:    { fontSize: 10.5, fontFamily: 'Inter_400Regular', marginTop: 5, textAlign: 'right' },
+  typingDots:   { flexDirection: 'row', gap: 5, paddingVertical: 4 },
+  typingDot:    { width: 7, height: 7, borderRadius: 4 },
+  inputBar:     {
+    flexDirection: 'row', alignItems: 'flex-end',
+    paddingHorizontal: 12, paddingTop: 10, borderTopWidth: 1, gap: 8,
   },
-  onlineText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-    fontFamily: 'Inter_400Regular',
+  inputWrap:    {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    borderRadius: 26, borderWidth: 1.5,
+    paddingHorizontal: 14, paddingVertical: 10, minHeight: 50,
   },
-  headerRight: { flexDirection: 'row', gap: 6 },
-  readingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  readingPillText: {
-    color: '#fff',
-    fontSize: 12,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  listContent: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
-  msgRow: {
-    flexDirection: 'row',
-    marginBottom: 14,
-    maxWidth: '85%',
-  },
-  msgRowUser: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-  msgRowAI: { alignSelf: 'flex-start' },
-  aiAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    alignSelf: 'flex-end',
-  },
-  bubble: {
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 11,
-    maxWidth: '100%',
-  },
-  bubbleText: {
-    fontSize: 14.5,
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 21,
-  },
-  timestamp: {
-    fontSize: 10.5,
-    fontFamily: 'Inter_400Regular',
-    marginTop: 5,
-    textAlign: 'right',
-  },
-  typingDots: { flexDirection: 'row', gap: 5, paddingVertical: 4 },
-  typingDot: { width: 7, height: 7, borderRadius: 4 },
-  inputBar: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    gap: 8,
-  },
-  inputWrap: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 26,
-    borderWidth: 1.5,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    minHeight: 50,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 14.5,
-    marginLeft: 8,
-    maxHeight: 110,
-  },
-  sendBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  textInput:    { flex: 1, fontSize: 14.5, marginLeft: 8, maxHeight: 110 },
+  sendBtn:      { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
 });
