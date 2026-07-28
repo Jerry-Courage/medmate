@@ -73,10 +73,10 @@ export default function ChatScreen() {
     inputRef.current?.focus();
 
     try {
-      // Build conversation history for context (oldest-first, user+assistant only)
-      const history = [...messages, userMsg]
-        .slice()
+      // messages is newest-first (inverted FlatList). Reverse to oldest-first, then append new userMsg.
+      const history = [...messages]
         .reverse()
+        .concat([userMsg])
         .map(m => ({ role: m.role, content: m.content }));
 
       const res = await fetch(`${API_BASE}/api/chat`, {
@@ -86,10 +86,13 @@ export default function ChatScreen() {
       });
 
       const data = await res.json();
-      const reply: string = data.reply ?? data.error ?? 'Something went wrong. Please try again.';
+      const reply: string = (data.reply ?? data.error ?? '').trim();
 
-      const aiMsg: Message = { id: genId(), role: 'assistant', content: reply, timestamp: new Date() };
-      setMessages(prev => [aiMsg, ...prev]);
+      // Only add a bubble if there is actual content
+      if (reply) {
+        const aiMsg: Message = { id: genId(), role: 'assistant', content: reply, timestamp: new Date() };
+        setMessages(prev => [aiMsg, ...prev]);
+      }
     } catch {
       const errMsg: Message = {
         id: genId(),
