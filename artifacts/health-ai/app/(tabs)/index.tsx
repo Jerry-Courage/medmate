@@ -29,7 +29,8 @@ const MOCK_READINGS = { bp: '120/80', hr: 72, spo2: 98, glucose: 95 };
 // Tab bar is 64px tall (position: absolute)
 const TAB_BAR_HEIGHT = 64;
 
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}/api`;
+// Proxy maps /api/* → API server, so the base is the root domain
+const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 function genId() {
   return Date.now().toString() + Math.random().toString(36).slice(2, 9);
