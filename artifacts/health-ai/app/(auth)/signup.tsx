@@ -113,7 +113,6 @@ export default function SignupScreen() {
       const { error: signUpError } = await signUp.password({
         emailAddress: email.trim(),
         password,
-        firstName: name.trim(),
       });
       if (signUpError) {
         setError(signUpError.message ?? 'Sign up failed. Please try again.');
