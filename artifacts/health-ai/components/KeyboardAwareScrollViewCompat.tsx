@@ -1,32 +1,38 @@
-import { Platform, ScrollView, ScrollViewProps } from 'react-native';
-import {
-  KeyboardAwareScrollView,
-  KeyboardAwareScrollViewProps,
-} from 'react-native-keyboard-controller';
+import { KeyboardAvoidingView, Platform, ScrollView, ScrollViewProps } from 'react-native';
 
-type Props = KeyboardAwareScrollViewProps & ScrollViewProps;
+type Props = ScrollViewProps & {
+  bottomOffset?: number; // ignored on native (was KeyboardAwareScrollView-specific), kept for API compat
+};
 
 export function KeyboardAwareScrollViewCompat({
   children,
   keyboardShouldPersistTaps = 'handled',
+  bottomOffset: _bottomOffset,
   ...props
 }: Props) {
   if (Platform.OS === 'web') {
     return (
-      <ScrollView
-        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-        {...props}
-      >
+      <ScrollView keyboardShouldPersistTaps={keyboardShouldPersistTaps} {...props}>
         {children}
       </ScrollView>
     );
   }
+
+  // Use KeyboardAvoidingView + ScrollView instead of KeyboardAwareScrollView from
+  // react-native-keyboard-controller, which causes focus to drop on iOS and loops
+  // through inputs on Android due to its auto-scroll behaviour.
   return (
-    <KeyboardAwareScrollView
-      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-      {...props}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
     >
-      {children}
-    </KeyboardAwareScrollView>
+      <ScrollView
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        showsVerticalScrollIndicator={false}
+        {...props}
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

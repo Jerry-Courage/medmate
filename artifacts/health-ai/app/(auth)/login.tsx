@@ -40,11 +40,6 @@ function InputField({
         {
           backgroundColor: '#fff',
           borderColor: focused ? colors.primary : colors.border,
-          shadowColor: focused ? colors.primary : 'transparent',
-          shadowOpacity: focused ? 0.18 : 0,
-          shadowRadius: 8,
-          shadowOffset: { width: 0, height: 2 },
-          elevation: focused ? 3 : 0,
         },
       ]}
     >
