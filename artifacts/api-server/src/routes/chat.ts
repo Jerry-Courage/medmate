@@ -4,7 +4,19 @@ import Groq from "groq-sdk";
 
 const router = Router();
 
-const groq = new Groq({ apiKey: process.env["GROQ_API_KEY"] });
+// Lazy-initialize the Groq client so a missing key at startup doesn't crash
+// the entire server. The key is validated at request time instead.
+let _groq: Groq | null = null;
+function getGroqClient(): Groq {
+  if (!_groq) {
+    const apiKey = process.env["GROQ_API_KEY"];
+    if (!apiKey) {
+      throw new Error("GROQ_API_KEY is not set");
+    }
+    _groq = new Groq({ apiKey });
+  }
+  return _groq;
+}
 
 const SYSTEM_PROMPT = `You are Medmate, a friendly and knowledgeable AI health assistant embedded in the Medmate mobile app.
 
@@ -40,7 +52,7 @@ router.post("/chat", requireAuth, async (req, res) => {
       return;
     }
 
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroqClient().chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
