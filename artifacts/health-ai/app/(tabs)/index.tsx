@@ -26,21 +26,25 @@ interface Message {
 
 const MOCK_READINGS = { bp: '120/80', hr: 72, spo2: 98, glucose: 95 };
 
-// Tab bar is 64px tall (position: absolute)
 const TAB_BAR_HEIGHT = 64;
-
-// Proxy maps /api/* → API server, so the base is the root domain
 const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
 
 function genId() {
   return Date.now().toString() + Math.random().toString(36).slice(2, 9);
 }
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning! 👋';
+  if (hour < 17) return 'Good afternoon! 👋';
+  return 'Good evening! 👋';
+}
+
 const INITIAL_MESSAGES: Message[] = [
   {
     id: '1',
     role: 'assistant',
-    content: `Hi! I'm Medmate, your personal AI health assistant.\n\nYour IoT devices aren't connected yet, but I'm here to chat, answer health questions, and help you understand your wellbeing.\n\nHow can I help you today?`,
+    content: `Hi! I'm Medmate, your AI health assistant.\n\nYour IoT devices aren't connected yet, but I'm here to chat, answer health questions, and help you understand your wellbeing.\n\nHow can I help you today?`,
     timestamp: new Date(),
   },
 ];
@@ -54,7 +58,7 @@ export default function ChatScreen() {
   const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef<TextInput>(null);
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const topPad = Platform.OS === 'web' ? 0 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom + TAB_BAR_HEIGHT;
 
   const sendMessage = useCallback(async () => {
@@ -62,8 +66,6 @@ export default function ChatScreen() {
     if (!text || isTyping) return;
 
     const userMsg: Message = { id: genId(), role: 'user', content: text, timestamp: new Date() };
-
-    // Append user message and clear input immediately
     setMessages(prev => [userMsg, ...prev]);
     setInput('');
     setIsTyping(true);
@@ -73,7 +75,6 @@ export default function ChatScreen() {
     inputRef.current?.focus();
 
     try {
-      // messages is newest-first (inverted FlatList). Reverse to oldest-first, then append new userMsg.
       const history = [...messages]
         .reverse()
         .concat([userMsg])
@@ -92,7 +93,6 @@ export default function ChatScreen() {
       const data = await res.json();
       const reply: string = (data.reply ?? data.error ?? '').trim();
 
-      // Only add a bubble if there is actual content
       if (reply) {
         const aiMsg: Message = { id: genId(), role: 'assistant', content: reply, timestamp: new Date() };
         setMessages(prev => [aiMsg, ...prev]);
@@ -115,108 +115,95 @@ export default function ChatScreen() {
     return (
       <View style={[styles.msgRow, isUser ? styles.msgRowUser : styles.msgRowAI]}>
         {!isUser && (
-          <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
-            <MaterialCommunityIcons name="robot" size={16} color={colors.primaryDark} />
+          <View style={styles.aiAvatar}>
+            <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
           </View>
         )}
-        <View
-          style={[
-            styles.bubble,
-            isUser
-              ? {
-                  backgroundColor: colors.primary,
-                  borderBottomRightRadius: 4,
-                  shadowColor: colors.primary,
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  shadowOffset: { width: 0, height: 3 },
-                  elevation: 4,
-                }
-              : {
-                  backgroundColor: '#FFFFFF',
-                  borderBottomLeftRadius: 4,
-                  borderWidth: 1.5,
-                  borderColor: colors.border,
-                  shadowColor: '#000',
-                  shadowOpacity: 0.06,
-                  shadowRadius: 6,
-                  shadowOffset: { width: 0, height: 2 },
-                  elevation: 2,
-                },
-          ]}
-        >
-          <Text style={[styles.bubbleText, { color: isUser ? '#FFFFFF' : colors.foreground }]}>
-            {item.content}
-          </Text>
-          <Text style={[styles.timestamp, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.mutedForeground }]}>
-            {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        </View>
+        {isUser ? (
+          <LinearGradient
+            colors={['#22C55E', '#16A34A']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={[styles.bubble, styles.userBubble]}
+          >
+            <Text style={styles.userBubbleText}>{item.content}</Text>
+            <Text style={styles.userTimestamp}>
+              {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </LinearGradient>
+        ) : (
+          <View style={[styles.bubble, styles.aiBubble]}>
+            <Text style={styles.aiBubbleText}>{item.content}</Text>
+            <Text style={styles.aiTimestamp}>
+              {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+          </View>
+        )}
       </View>
     );
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* ── Header ── */}
+    <View style={styles.root}>
+      {/* ── Gradient Header ── */}
       <LinearGradient
-        colors={[colors.gradientStart, colors.gradientEnd]}
-        style={[styles.header, { paddingTop: topPad + 8 }]}
+        colors={['#4ADE80', '#16A34A']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.4, y: 1 }}
+        style={[styles.header, { paddingTop: topPad + 14 }]}
       >
-        <View style={styles.headerInner}>
-          <View style={styles.headerLeft}>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.headerTitle}>Medmate AI</Text>
+          </View>
+          <View style={styles.headerAvatar}>
             <Image
               source={require('../../assets/images/ai-robot.png')}
-              style={styles.headerAvatar}
+              style={styles.avatarImg}
               contentFit="contain"
             />
-            <View>
-              <Text style={styles.headerName}>Medmate AI</Text>
-              <View style={styles.onlineRow}>
-                <View style={styles.onlineDot} />
-                <Text style={styles.onlineText}>Online</Text>
-              </View>
-            </View>
-          </View>
-          <View style={styles.headerRight}>
-            <View style={styles.readingPill}>
-              <Ionicons name="heart" size={11} color="#fff" />
-              <Text style={styles.readingPillText}>{MOCK_READINGS.hr} bpm</Text>
-            </View>
-            <View style={styles.readingPill}>
-              <Text style={styles.readingPillText}>{MOCK_READINGS.bp}</Text>
-            </View>
           </View>
         </View>
+
+        {/* Vital pills */}
+        <View style={styles.pillsRow}>
+          <View style={styles.pill}>
+            <Ionicons name="heart" size={13} color="#fff" />
+            <Text style={styles.pillText}>{MOCK_READINGS.hr} bpm</Text>
+          </View>
+          <View style={styles.pill}>
+            <Ionicons name="pulse" size={13} color="#fff" />
+            <Text style={styles.pillText}>{MOCK_READINGS.bp} mmHg</Text>
+          </View>
+        </View>
+
+        {/* Curved white bottom edge */}
+        <View style={styles.headerCurve} />
       </LinearGradient>
 
-      {/* ── Chat ── */}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={0}>
+      {/* ── Chat + Input ── */}
+      <KeyboardAvoidingView style={styles.body} behavior="padding" keyboardVerticalOffset={0}>
         <FlatList
           data={messages}
           keyExtractor={item => item.id}
           renderItem={renderMessage}
           inverted
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 10 }]}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             isTyping ? (
               <View style={[styles.msgRow, styles.msgRowAI, { marginBottom: 12 }]}>
-                <View style={[styles.aiAvatar, { backgroundColor: colors.primaryLight }]}>
-                  <MaterialCommunityIcons name="robot" size={16} color={colors.primaryDark} />
+                <View style={styles.aiAvatar}>
+                  <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                 </View>
-                <View
-                  style={[
-                    styles.bubble,
-                    { backgroundColor: '#FFFFFF', borderBottomLeftRadius: 4, borderWidth: 1.5, borderColor: colors.border },
-                  ]}
-                >
+                <View style={[styles.bubble, styles.aiBubble]}>
                   <View style={styles.typingDots}>
-                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
-                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
-                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
+                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
+                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
+                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
                   </View>
                 </View>
               </View>
@@ -224,20 +211,20 @@ export default function ChatScreen() {
           }
         />
 
-        {/* ── Input bar ── */}
-        <View
-          style={[
-            styles.inputBar,
-            { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: bottomPad },
-          ]}
-        >
-          <View style={[styles.inputWrap, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Ionicons name="medical" size={17} color={colors.primary} style={{ marginLeft: 4 }} />
+        {/* ── Input Bar ── */}
+        <View style={[styles.inputBar, { paddingBottom: bottomPad }]}>
+          {/* Attachment */}
+          <Pressable style={styles.attachBtn}>
+            <Ionicons name="attach" size={22} color="#9CA3AF" />
+          </Pressable>
+
+          {/* Text input */}
+          <View style={styles.inputWrap}>
             <TextInput
               ref={inputRef}
-              style={[styles.textInput, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}
-              placeholder="Ask about your health..."
-              placeholderTextColor={colors.mutedForeground}
+              style={[styles.textInput, { fontFamily: 'Inter_400Regular' }]}
+              placeholder="Ask Medmate..."
+              placeholderTextColor="#9CA3AF"
               value={input}
               onChangeText={setInput}
               multiline
@@ -246,16 +233,20 @@ export default function ChatScreen() {
               onSubmitEditing={sendMessage}
               blurOnSubmit={false}
             />
+            <Ionicons name="mic-outline" size={18} color="#9CA3AF" style={styles.micIcon} />
           </View>
+
+          {/* Send button */}
           <Pressable
             style={({ pressed }) => [
               styles.sendBtn,
-              { backgroundColor: input.trim() ? colors.primary : colors.muted, opacity: pressed ? 0.8 : 1 },
+              { opacity: pressed ? 0.85 : 1 },
+              !input.trim() && styles.sendBtnDisabled,
             ]}
             onPress={sendMessage}
             disabled={!input.trim() || isTyping}
           >
-            <Ionicons name="send" size={17} color={input.trim() ? '#fff' : colors.mutedForeground} />
+            <Ionicons name="send" size={16} color="#fff" style={{ marginLeft: 2 }} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -264,45 +255,206 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  root:         { flex: 1 },
-  header:       { paddingHorizontal: 16, paddingBottom: 14 },
-  headerInner:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  headerLeft:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerAvatar: { width: 40, height: 40, borderRadius: 20 },
-  headerName:   { color: '#fff', fontSize: 16, fontFamily: 'Inter_700Bold' },
-  onlineRow:    { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  onlineDot:    { width: 7, height: 7, borderRadius: 4, backgroundColor: '#A7F3D0' },
-  onlineText:   { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontFamily: 'Inter_400Regular' },
-  headerRight:  { flexDirection: 'row', gap: 6 },
-  readingPill:  {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.22)', borderRadius: 12,
-    paddingHorizontal: 10, paddingVertical: 5,
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  // ── Header ──
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 0,
+    zIndex: 1,
   },
-  readingPillText: { color: '#fff', fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  listContent:  { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 10 },
-  msgRow:       { flexDirection: 'row', marginBottom: 14, maxWidth: '85%' },
-  msgRowUser:   { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-  msgRowAI:     { alignSelf: 'flex-start' },
-  aiAvatar:     {
-    width: 30, height: 30, borderRadius: 15,
-    alignItems: 'center', justifyContent: 'center',
-    marginRight: 8, alignSelf: 'flex-end',
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
-  bubble:       { borderRadius: 20, paddingHorizontal: 15, paddingVertical: 11, maxWidth: '100%' },
-  bubbleText:   { fontSize: 14.5, fontFamily: 'Inter_400Regular', lineHeight: 21 },
-  timestamp:    { fontSize: 10.5, fontFamily: 'Inter_400Regular', marginTop: 5, textAlign: 'right' },
-  typingDots:   { flexDirection: 'row', gap: 5, paddingVertical: 4 },
-  typingDot:    { width: 7, height: 7, borderRadius: 4 },
-  inputBar:     {
-    flexDirection: 'row', alignItems: 'flex-end',
-    paddingHorizontal: 12, paddingTop: 10, borderTopWidth: 1, gap: 8,
+  greeting: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontFamily: 'Inter_400Regular',
+    marginBottom: 4,
   },
-  inputWrap:    {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    borderRadius: 26, borderWidth: 1.5,
-    paddingHorizontal: 14, paddingVertical: 10, minHeight: 50,
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontFamily: 'Inter_700Bold',
+    letterSpacing: -0.5,
   },
-  textInput:    { flex: 1, fontSize: 14.5, marginLeft: 8, maxHeight: 110 },
-  sendBtn:      { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImg: { width: 32, height: 32 },
+
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  pillText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+  },
+
+  // Curved white tab at bottom of header
+  headerCurve: {
+    height: 28,
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginHorizontal: -20,
+  },
+
+  // ── Body ──
+  body: { flex: 1, backgroundColor: '#FFFFFF' },
+
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
+  },
+
+  // ── Messages ──
+  msgRow: { flexDirection: 'row', marginBottom: 16, maxWidth: '86%' },
+  msgRowUser: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
+  msgRowAI: { alignSelf: 'flex-start' },
+
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+    alignSelf: 'flex-end',
+    shadowColor: '#22C55E',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+
+  bubble: { borderRadius: 20, maxWidth: '100%' },
+
+  aiBubble: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderBottomLeftRadius: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  aiBubbleText: {
+    fontSize: 14.5,
+    fontFamily: 'Inter_400Regular',
+    color: '#111827',
+    lineHeight: 21,
+  },
+  aiTimestamp: {
+    fontSize: 10.5,
+    fontFamily: 'Inter_400Regular',
+    color: '#9CA3AF',
+    marginTop: 5,
+  },
+
+  userBubble: {
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+  },
+  userBubbleText: {
+    fontSize: 14.5,
+    fontFamily: 'Inter_400Regular',
+    color: '#FFFFFF',
+    lineHeight: 21,
+  },
+  userTimestamp: {
+    fontSize: 10.5,
+    fontFamily: 'Inter_400Regular',
+    color: 'rgba(255,255,255,0.7)',
+    marginTop: 5,
+    textAlign: 'right',
+  },
+
+  typingDots: { flexDirection: 'row', gap: 5, paddingVertical: 4 },
+  typingDot: { width: 7, height: 7, borderRadius: 4 },
+
+  // ── Input Bar ──
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    gap: 8,
+  },
+  attachBtn: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inputWrap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 46,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 14.5,
+    color: '#111827',
+    maxHeight: 110,
+  },
+  micIcon: { marginLeft: 8 },
+  sendBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#22C55E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#22C55E',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  sendBtnDisabled: {
+    backgroundColor: '#D1D5DB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
 });
