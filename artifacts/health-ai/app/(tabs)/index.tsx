@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCallback, useRef, useState } from 'react';
+import { useAuth } from '@clerk/expo';
 
 interface Message {
   id: string;
@@ -47,6 +48,7 @@ const INITIAL_MESSAGES: Message[] = [
 export default function ChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -77,9 +79,13 @@ export default function ChatScreen() {
         .concat([userMsg])
         .map(m => ({ role: m.role, content: m.content }));
 
+      const token = await getToken();
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ messages: history }),
       });
 
