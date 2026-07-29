@@ -6,5 +6,6 @@ export const modules: ModuleMap = {
   "./components/mockups/chat-variants/SoftClinical.tsx": () => import("../components/mockups/chat-variants/SoftClinical.tsx"),
   "./components/mockups/medmate/BoldGradient.tsx": () => import("../components/mockups/medmate/BoldGradient.tsx"),
   "./components/mockups/medmate/DarkGlass.tsx": () => import("../components/mockups/medmate/DarkGlass.tsx"),
-  "./components/mockups/medmate/SoftMinimal.tsx": () => import("../components/mockups/medmate/SoftMinimal.tsx")
+  "./components/mockups/medmate/SoftMinimal.tsx": () => import("../components/mockups/medmate/SoftMinimal.tsx"),
+  "./components/mockups/medmate/ThemeToggle.tsx": () => import("../components/mockups/medmate/ThemeToggle.tsx")
 };
