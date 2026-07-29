@@ -10,14 +10,21 @@ import {
 } from '@expo-google-fonts/inter';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
+import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { setBaseUrl } from '@workspace/api-client-react';
 
-SplashScreen.preventAutoHideAsync();
+// On native, prevent auto-hide so we control when to show the app.
+// On web this call is omitted — the web "splash" is just a white CSS
+// overlay and we want it gone immediately so the app is never blank.
+if (Platform.OS !== 'web') {
+  SplashScreen.preventAutoHideAsync();
+}
 
 // Point the API client at the dev/prod server domain
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
@@ -67,12 +74,17 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+    if (Platform.OS === 'web') {
+      // On web, hide the splash screen immediately — don't wait for fonts.
+      SplashScreen.hideAsync().catch(() => {});
+    } else if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => {});
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  // On web: always render (system fonts fallback is fine).
+  // On native: wait for fonts (or a font error) so we don't flash unstyled text.
+  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) return null;
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
@@ -81,9 +93,13 @@ export default function RootLayout() {
           <ErrorBoundary>
             <QueryClientProvider client={queryClient}>
               <GestureHandlerRootView style={{ flex: 1 }}>
-                <KeyboardProvider>
+                {Platform.OS === 'web' ? (
                   <RootLayoutNav />
-                </KeyboardProvider>
+                ) : (
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                )}
               </GestureHandlerRootView>
             </QueryClientProvider>
           </ErrorBoundary>
