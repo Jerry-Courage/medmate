@@ -240,7 +240,13 @@ export default function ChatScreen() {
           >
             <TextInput
               ref={inputRef}
-              style={[styles.textInput, { fontFamily: 'Inter_400Regular', color: colors.inputForeground }]}
+              style={{
+                flex: 1,
+                fontSize: 14.5,
+                maxHeight: 110,
+                fontFamily: 'Inter_400Regular',
+                color: colors.inputForeground,
+              }}
               placeholder="Ask Medmate..."
               placeholderTextColor={colors.mutedForeground}
               value={input}
