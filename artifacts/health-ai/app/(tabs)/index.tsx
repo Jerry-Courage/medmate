@@ -132,9 +132,9 @@ export default function ChatScreen() {
             </Text>
           </LinearGradient>
         ) : (
-          <View style={[styles.bubble, styles.aiBubble]}>
-            <Text style={styles.aiBubbleText}>{item.content}</Text>
-            <Text style={styles.aiTimestamp}>
+          <View style={[styles.bubble, styles.aiBubble, { backgroundColor: colors.chatAI }]}>
+            <Text style={[styles.aiBubbleText, { color: colors.foreground }]}>{item.content}</Text>
+            <Text style={[styles.aiTimestamp, { color: colors.mutedForeground }]}>
               {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </View>
@@ -144,10 +144,10 @@ export default function ChatScreen() {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* ── Gradient Header ── */}
       <LinearGradient
-        colors={['#4ADE80', '#16A34A']}
+        colors={[colors.gradientStart, colors.gradientEnd]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.4, y: 1 }}
         style={[styles.header, { paddingTop: topPad + 14 }]}
@@ -178,12 +178,16 @@ export default function ChatScreen() {
           </View>
         </View>
 
-        {/* Curved white bottom edge */}
-        <View style={styles.headerCurve} />
+        {/* Curved bottom edge matching screen background */}
+        <View style={[styles.headerCurve, { backgroundColor: colors.background }]} />
       </LinearGradient>
 
       {/* ── Chat + Input ── */}
-      <KeyboardAvoidingView style={styles.body} behavior="padding" keyboardVerticalOffset={0}>
+      <KeyboardAvoidingView
+        style={[styles.body, { backgroundColor: colors.background }]}
+        behavior="padding"
+        keyboardVerticalOffset={0}
+      >
         <FlatList
           data={messages}
           keyExtractor={item => item.id}
@@ -199,11 +203,11 @@ export default function ChatScreen() {
                 <View style={styles.aiAvatar}>
                   <MaterialCommunityIcons name="robot" size={16} color="#FFFFFF" />
                 </View>
-                <View style={[styles.bubble, styles.aiBubble]}>
+                <View style={[styles.bubble, styles.aiBubble, { backgroundColor: colors.chatAI }]}>
                   <View style={styles.typingDots}>
-                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
-                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
-                    <View style={[styles.typingDot, { backgroundColor: '#9CA3AF' }]} />
+                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
+                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
+                    <View style={[styles.typingDot, { backgroundColor: colors.mutedForeground }]} />
                   </View>
                 </View>
               </View>
@@ -212,19 +216,33 @@ export default function ChatScreen() {
         />
 
         {/* ── Input Bar ── */}
-        <View style={[styles.inputBar, { paddingBottom: bottomPad }]}>
+        <View
+          style={[
+            styles.inputBar,
+            {
+              paddingBottom: bottomPad,
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+            },
+          ]}
+        >
           {/* Attachment */}
           <Pressable style={styles.attachBtn}>
-            <Ionicons name="attach" size={22} color="#9CA3AF" />
+            <Ionicons name="attach" size={22} color={colors.mutedForeground} />
           </Pressable>
 
           {/* Text input */}
-          <View style={styles.inputWrap}>
+          <View
+            style={[
+              styles.inputWrap,
+              { backgroundColor: colors.input, borderColor: colors.border },
+            ]}
+          >
             <TextInput
               ref={inputRef}
-              style={[styles.textInput, { fontFamily: 'Inter_400Regular' }]}
+              style={[styles.textInput, { fontFamily: 'Inter_400Regular', color: colors.inputForeground }]}
               placeholder="Ask Medmate..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.mutedForeground}
               value={input}
               onChangeText={setInput}
               multiline
@@ -233,7 +251,7 @@ export default function ChatScreen() {
               onSubmitEditing={sendMessage}
               blurOnSubmit={false}
             />
-            <Ionicons name="mic-outline" size={18} color="#9CA3AF" style={styles.micIcon} />
+            <Ionicons name="mic-outline" size={18} color={colors.mutedForeground} style={styles.micIcon} />
           </View>
 
           {/* Send button */}
@@ -255,7 +273,7 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  root: { flex: 1 },
 
   // ── Header ──
   header: {
@@ -314,17 +332,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
   },
 
-  // Curved white tab at bottom of header
+  // Curved edge at bottom of header matching screen bg
   headerCurve: {
     height: 28,
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     marginHorizontal: -20,
   },
 
   // ── Body ──
-  body: { flex: 1, backgroundColor: '#FFFFFF' },
+  body: { flex: 1 },
 
   listContent: {
     paddingHorizontal: 16,
@@ -355,7 +372,6 @@ const styles = StyleSheet.create({
   bubble: { borderRadius: 20, maxWidth: '100%' },
 
   aiBubble: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderRadius: 20,
@@ -369,13 +385,11 @@ const styles = StyleSheet.create({
   aiBubbleText: {
     fontSize: 14.5,
     fontFamily: 'Inter_400Regular',
-    color: '#111827',
     lineHeight: 21,
   },
   aiTimestamp: {
     fontSize: 10.5,
     fontFamily: 'Inter_400Regular',
-    color: '#9CA3AF',
     marginTop: 5,
   },
 
@@ -409,9 +423,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 12,
-    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
     gap: 8,
   },
   attachBtn: {
@@ -424,10 +436,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
     paddingHorizontal: 16,
     paddingVertical: 10,
     minHeight: 46,
@@ -435,7 +445,6 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     fontSize: 14.5,
-    color: '#111827',
     maxHeight: 110,
   },
   micIcon: { marginLeft: 8 },

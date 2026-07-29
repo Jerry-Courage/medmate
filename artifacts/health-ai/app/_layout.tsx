@@ -1,6 +1,7 @@
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@/context/ThemeContext';
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -74,22 +75,24 @@ export default function RootLayout() {
   if (!fontsReady) return null;
 
   return (
-    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <QueryClientProvider client={queryClient}>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              {Platform.OS === 'web' ? (
-                <RootLayoutNav />
-              ) : (
-                <KeyboardProvider>
+    <ThemeProvider>
+      <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <QueryClientProvider client={queryClient}>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                {Platform.OS === 'web' ? (
                   <RootLayoutNav />
-                </KeyboardProvider>
-              )}
-            </GestureHandlerRootView>
-          </QueryClientProvider>
-        </ErrorBoundary>
-      </SafeAreaProvider>
-    </ClerkProvider>
+                ) : (
+                  <KeyboardProvider>
+                    <RootLayoutNav />
+                  </KeyboardProvider>
+                )}
+              </GestureHandlerRootView>
+            </QueryClientProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </ClerkProvider>
+    </ThemeProvider>
   );
 }

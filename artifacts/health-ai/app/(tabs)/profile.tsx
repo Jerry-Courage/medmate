@@ -1,8 +1,9 @@
 import { useClerk, useUser } from '@clerk/expo';
 import { useColors } from '@/hooks/useColors';
+import { useTheme } from '@/context/ThemeContext';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SETTINGS = [
@@ -15,6 +16,7 @@ const SETTINGS = [
 
 export default function ProfileScreen() {
   const colors = useColors();
+  const { isDark, toggleTheme } = useTheme();
   const insets  = useSafeAreaInsets();
   const { signOut } = useClerk();
   const { user } = useUser();
@@ -36,7 +38,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: '#F2F3F7' }]}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* ── Green header ── */}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
@@ -56,20 +58,20 @@ export default function ProfileScreen() {
         <Text style={styles.userEmail}>{displayEmail}</Text>
 
         {/* Stats card */}
-        <View style={styles.statsCard}>
+        <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>94</Text>
-            <Text style={styles.statLabel}>Health Score</Text>
+            <Text style={[styles.statValue, { color: colors.foreground }]}>94</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Health Score</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>7</Text>
-            <Text style={styles.statLabel}>Day Streak</Text>
+            <Text style={[styles.statValue, { color: colors.foreground }]}>7</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Day Streak</Text>
           </View>
-          <View style={styles.statDivider} />
+          <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>3</Text>
-            <Text style={styles.statLabel}>Devices</Text>
+            <Text style={[styles.statValue, { color: colors.foreground }]}>3</Text>
+            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Devices</Text>
           </View>
         </View>
       </LinearGradient>
@@ -78,37 +80,71 @@ export default function ProfileScreen() {
         contentContainerStyle={[styles.scroll, { paddingBottom: bottomPad + 90 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Appearance toggle ── */}
+        <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
+          <View style={styles.settingRow}>
+            <View style={[styles.settingIcon, { backgroundColor: colors.primaryLight }]}>
+              <Feather
+                name={isDark ? 'moon' : 'sun'}
+                size={17}
+                color={colors.primaryDark}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.settingLabel, { color: colors.foreground }]}>Dark Mode</Text>
+              <Text style={[styles.settingSub, { color: colors.mutedForeground }]}>
+                {isDark ? 'Dark theme active' : 'Light theme active'}
+              </Text>
+            </View>
+            <Switch
+              value={isDark}
+              onValueChange={toggleTheme}
+              trackColor={{ false: colors.border, true: '#22C55E' }}
+              thumbColor={isDark ? '#fff' : '#fff'}
+              ios_backgroundColor={colors.border}
+            />
+          </View>
+        </View>
+
         {/* ── Settings list ── */}
-        <View style={styles.settingsCard}>
+        <View style={[styles.settingsCard, { backgroundColor: colors.card }]}>
           {SETTINGS.map((s, idx) => (
             <View key={s.id}>
               <Pressable
-                style={({ pressed }) => [styles.settingRow, pressed && { backgroundColor: '#F9FAFB' }]}
+                style={({ pressed }) => [
+                  styles.settingRow,
+                  pressed && { backgroundColor: colors.muted },
+                ]}
               >
-                <View style={styles.settingIcon}>
-                  <Feather name={s.icon as any} size={17} color="#22C55E" />
+                <View style={[styles.settingIcon, { backgroundColor: colors.primaryLight }]}>
+                  <Feather name={s.icon as any} size={17} color={colors.primaryDark} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.settingLabel}>{s.label}</Text>
-                  <Text style={styles.settingSub}>{s.sub}</Text>
+                  <Text style={[styles.settingLabel, { color: colors.foreground }]}>{s.label}</Text>
+                  <Text style={[styles.settingSub, { color: colors.mutedForeground }]}>{s.sub}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#C4C4C4" />
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
-              {idx < SETTINGS.length - 1 && <View style={styles.divider} />}
+              {idx < SETTINGS.length - 1 && (
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              )}
             </View>
           ))}
         </View>
 
         {/* ── Sign Out ── */}
         <Pressable
-          style={({ pressed }) => [styles.signOutBtn, { opacity: pressed ? 0.75 : 1 }]}
+          style={({ pressed }) => [
+            styles.signOutBtn,
+            { backgroundColor: colors.card, borderColor: colors.destructive, opacity: pressed ? 0.75 : 1 },
+          ]}
           onPress={handleSignOut}
         >
-          <MaterialCommunityIcons name="logout" size={20} color="#EF4444" />
-          <Text style={styles.signOutText}>Sign Out</Text>
+          <MaterialCommunityIcons name="logout" size={20} color={colors.destructive} />
+          <Text style={[styles.signOutText, { color: colors.destructive }]}>Sign Out</Text>
         </Pressable>
 
-        <Text style={styles.version}>Medmate v1.0.0</Text>
+        <Text style={[styles.version, { color: colors.mutedForeground }]}>Medmate v1.0.0</Text>
       </ScrollView>
     </View>
   );
@@ -133,28 +169,27 @@ const styles = StyleSheet.create({
   userName:   { color: '#fff', fontSize: 21, fontFamily: 'Inter_700Bold', marginBottom: 3 },
   userEmail:  { color: 'rgba(255,255,255,0.82)', fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 20 },
   statsCard: {
-    flexDirection: 'row', backgroundColor: '#fff', borderRadius: 18, paddingVertical: 16, width: '100%',
+    flexDirection: 'row', borderRadius: 18, paddingVertical: 16, width: '100%',
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 3,
   },
   statItem:    { flex: 1, alignItems: 'center' },
-  statValue:   { fontSize: 22, fontFamily: 'Inter_700Bold', color: '#111827' },
-  statLabel:   { fontSize: 11, fontFamily: 'Inter_400Regular', color: '#6B7280', marginTop: 3 },
-  statDivider: { width: 1, backgroundColor: '#E5E7EB' },
-  scroll:      { paddingHorizontal: 16, paddingTop: 20 },
+  statValue:   { fontSize: 22, fontFamily: 'Inter_700Bold' },
+  statLabel:   { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 3 },
+  statDivider: { width: 1 },
+  scroll:      { paddingHorizontal: 16, paddingTop: 20, gap: 16 },
   settingsCard: {
-    backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', marginBottom: 20,
+    borderRadius: 18, overflow: 'hidden',
     shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   settingRow:  { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 15 },
-  settingIcon: { width: 38, height: 38, borderRadius: 11, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center' },
-  settingLabel:{ fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  settingSub:  { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#9CA3AF', marginTop: 2 },
-  divider:     { height: 1, backgroundColor: '#F3F4F6', marginLeft: 68 },
+  settingIcon: { width: 38, height: 38, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  settingLabel:{ fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  settingSub:  { fontSize: 12, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  divider:     { height: 1, marginLeft: 68 },
   signOutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    borderWidth: 1.5, borderColor: '#EF4444', borderRadius: 16, paddingVertical: 15,
-    backgroundColor: '#fff', marginBottom: 18,
+    borderWidth: 1.5, borderRadius: 16, paddingVertical: 15,
   },
-  signOutText: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#EF4444' },
-  version:     { textAlign: 'center', fontSize: 12, fontFamily: 'Inter_400Regular', color: '#9CA3AF', marginBottom: 4 },
+  signOutText: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  version:     { textAlign: 'center', fontSize: 12, fontFamily: 'Inter_400Regular', marginBottom: 4 },
 });

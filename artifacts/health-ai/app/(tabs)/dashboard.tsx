@@ -15,6 +15,7 @@ interface Reading {
   status: 'normal' | 'warning' | 'critical';
   trend: 'up' | 'down' | 'stable';
   bg: string;
+  darkBg: string;
   iconColor: string;
 }
 
@@ -22,37 +23,37 @@ const READINGS: Reading[] = [
   {
     id: '1', label: 'Blood Pressure', value: '120/80', unit: 'mmHg',
     icon: 'heart', iconSet: 'ionicons', status: 'normal', trend: 'stable',
-    bg: '#FEE2E2', iconColor: '#F87171',
+    bg: '#FEE2E2', darkBg: '#450A0A', iconColor: '#F87171',
   },
   {
     id: '2', label: 'Heart Rate', value: '72', unit: 'bpm',
     icon: 'activity', iconSet: 'feather', status: 'normal', trend: 'down',
-    bg: '#FEF9C3', iconColor: '#CA8A04',
+    bg: '#FEF9C3', darkBg: '#422006', iconColor: '#CA8A04',
   },
   {
     id: '3', label: 'SpO2', value: '98', unit: '%',
     icon: 'water', iconSet: 'ionicons', status: 'normal', trend: 'stable',
-    bg: '#DBEAFE', iconColor: '#3B82F6',
+    bg: '#DBEAFE', darkBg: '#172554', iconColor: '#3B82F6',
   },
   {
     id: '4', label: 'Glucose', value: '95', unit: 'mg/dL',
     icon: 'flask', iconSet: 'ionicons', status: 'normal', trend: 'up',
-    bg: '#FEF3C7', iconColor: '#D97706',
+    bg: '#FEF3C7', darkBg: '#431407', iconColor: '#D97706',
   },
   {
     id: '5', label: 'Temperature', value: '36.8', unit: '°C',
     icon: 'thermometer', iconSet: 'feather', status: 'normal', trend: 'stable',
-    bg: '#DCFCE7', iconColor: '#16A34A',
+    bg: '#DCFCE7', darkBg: '#14532D', iconColor: '#16A34A',
   },
   {
     id: '6', label: 'Weight', value: '70', unit: 'kg',
     icon: 'scale-bathroom', iconSet: 'material', status: 'normal', trend: 'stable',
-    bg: '#F3E8FF', iconColor: '#9333EA',
+    bg: '#F3E8FF', darkBg: '#3B0764', iconColor: '#9333EA',
   },
   {
     id: '7', label: 'Height', value: '175', unit: 'cm',
     icon: 'human-male-height', iconSet: 'material', status: 'normal', trend: 'stable',
-    bg: '#E0F2FE', iconColor: '#0284C7',
+    bg: '#E0F2FE', darkBg: '#082F49', iconColor: '#0284C7',
   },
 ];
 
@@ -70,10 +71,16 @@ const STATUS_COLORS = {
   critical: '#EF4444',
 };
 
-const STATUS_BG = {
+const STATUS_BG_LIGHT = {
   normal: '#DCFCE7',
   warning: '#FEF3C7',
   critical: '#FEE2E2',
+};
+
+const STATUS_BG_DARK = {
+  normal: '#14532D',
+  warning: '#431407',
+  critical: '#450A0A',
 };
 
 function ReadingIcon({ icon, iconSet, color }: { icon: string; iconSet: string; color: string }) {
@@ -90,9 +97,11 @@ function TrendIcon({ trend, colors }: { trend: 'up' | 'down' | 'stable'; colors:
 
 export default function DashboardScreen() {
   const colors = useColors();
+  const isDark = colors.background !== '#FFFFFF';
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const statusBg = isDark ? STATUS_BG_DARK : STATUS_BG_LIGHT;
 
   // Split readings into pairs for 2-column layout
   const rows: Reading[][] = [];
@@ -111,17 +120,20 @@ export default function DashboardScreen() {
         <Text style={styles.headerSub}>Last synced: Today, 8:30 AM</Text>
 
         {/* AI Insight card */}
-        <Pressable style={styles.insightCard} onPress={() => router.push('/(tabs)')}>
-          <View style={styles.insightIconWrap}>
-            <MaterialCommunityIcons name="robot" size={20} color="#16A34A" />
+        <Pressable
+          style={[styles.insightCard, { backgroundColor: colors.card }]}
+          onPress={() => router.push('/(tabs)')}
+        >
+          <View style={[styles.insightIconWrap, { backgroundColor: colors.primaryLight }]}>
+            <MaterialCommunityIcons name="robot" size={20} color={colors.primaryDark} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.insightTitle}>AI Insight</Text>
-            <Text style={styles.insightText} numberOfLines={2}>
+            <Text style={[styles.insightTitle, { color: colors.foreground }]}>AI Insight</Text>
+            <Text style={[styles.insightText, { color: colors.mutedForeground }]} numberOfLines={2}>
               All your vitals look normal today. Keep it up and stay hydrated!
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
       </LinearGradient>
 
@@ -136,7 +148,7 @@ export default function DashboardScreen() {
           {rows.map((row, rowIdx) => (
             <View key={rowIdx} style={styles.row}>
               {row.map(r => (
-                <ReadingCard key={r.id} reading={r} colors={colors} />
+                <ReadingCard key={r.id} reading={r} colors={colors} isDark={isDark} statusBg={statusBg} />
               ))}
               {/* Spacer when row has only 1 card */}
               {row.length === 1 && <View style={styles.cardSpacer} />}
@@ -155,7 +167,7 @@ export default function DashboardScreen() {
                   <Text style={[styles.historyLabel, { color: colors.foreground }]}>{h.label}</Text>
                   <Text style={[styles.historyDate, { color: colors.mutedForeground }]}>{h.date}</Text>
                 </View>
-                <View style={[styles.historyBadge, { backgroundColor: STATUS_BG[h.status] }]}>
+                <View style={[styles.historyBadge, { backgroundColor: statusBg[h.status] }]}>
                   <Text style={[styles.historyValue, { color: STATUS_COLORS[h.status] }]}>{h.value}</Text>
                 </View>
               </View>
@@ -176,8 +188,8 @@ export default function DashboardScreen() {
           ].map((device, idx) => (
             <View key={device.name}>
               <View style={styles.deviceRow}>
-                <View style={[styles.deviceIcon, { backgroundColor: '#DCFCE7' }]}>
-                  <MaterialCommunityIcons name={device.icon as any} size={18} color="#16A34A" />
+                <View style={[styles.deviceIcon, { backgroundColor: colors.primaryLight }]}>
+                  <MaterialCommunityIcons name={device.icon as any} size={18} color={colors.primaryDark} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.deviceName, { color: colors.foreground }]}>{device.name}</Text>
@@ -186,19 +198,28 @@ export default function DashboardScreen() {
                 <View
                   style={[
                     styles.statusBadge,
-                    { backgroundColor: device.status === 'connected' ? '#DCFCE7' : '#F3F4F6' },
+                    {
+                      backgroundColor:
+                        device.status === 'connected' ? colors.primaryLight : colors.muted,
+                    },
                   ]}
                 >
                   <View
                     style={[
                       styles.statusDot,
-                      { backgroundColor: device.status === 'connected' ? '#22C55E' : '#9CA3AF' },
+                      {
+                        backgroundColor:
+                          device.status === 'connected' ? colors.success : colors.mutedForeground,
+                      },
                     ]}
                   />
                   <Text
                     style={[
                       styles.statusText,
-                      { color: device.status === 'connected' ? '#16A34A' : '#6B7280' },
+                      {
+                        color:
+                          device.status === 'connected' ? colors.primaryDark : colors.mutedForeground,
+                      },
                     ]}
                   >
                     {device.status}
@@ -214,11 +235,26 @@ export default function DashboardScreen() {
   );
 }
 
-function ReadingCard({ reading, colors }: { reading: Reading; colors: any }) {
+function ReadingCard({
+  reading,
+  colors,
+  isDark,
+  statusBg,
+}: {
+  reading: Reading;
+  colors: any;
+  isDark: boolean;
+  statusBg: typeof STATUS_BG_LIGHT;
+}) {
   return (
     <View style={[styles.readingCard, { backgroundColor: colors.card }]}>
       {/* Icon */}
-      <View style={[styles.readingIconWrap, { backgroundColor: reading.bg }]}>
+      <View
+        style={[
+          styles.readingIconWrap,
+          { backgroundColor: isDark ? reading.darkBg : reading.bg },
+        ]}
+      >
         <ReadingIcon icon={reading.icon} iconSet={reading.iconSet} color={reading.iconColor} />
       </View>
 
@@ -231,7 +267,7 @@ function ReadingCard({ reading, colors }: { reading: Reading; colors: any }) {
 
       {/* Footer */}
       <View style={styles.readingFooter}>
-        <View style={[styles.normalBadge, { backgroundColor: STATUS_BG[reading.status] }]}>
+        <View style={[styles.normalBadge, { backgroundColor: statusBg[reading.status] }]}>
           <Text style={[styles.normalText, { color: STATUS_COLORS[reading.status] }]}>
             {reading.status}
           </Text>
@@ -251,16 +287,16 @@ const styles = StyleSheet.create({
   headerSub:      { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Inter_400Regular', marginTop: 2, marginBottom: 16 },
   insightCard:    {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#fff', borderRadius: 16, padding: 14,
+    borderRadius: 16, padding: 14,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
   },
   insightIconWrap: {
     width: 38, height: 38, borderRadius: 10,
-    backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  insightTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: '#111827' },
-  insightText:  { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#6B7280', lineHeight: 17, marginTop: 2 },
+  insightTitle: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  insightText:  { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 17, marginTop: 2 },
 
   // ── Scroll ──
   scrollContent: { paddingHorizontal: 16, paddingTop: 22 },
@@ -287,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
   readingValue: { fontSize: 24, fontFamily: 'Inter_700Bold', lineHeight: 28 },
-  readingUnit:  { fontSize: 11, fontFamily: 'Inter_400Regular', color: '#9CA3AF', marginTop: 2 },
+  readingUnit:  { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
   readingLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 1, marginBottom: 12 },
   readingFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   normalBadge:   { borderRadius: 8, paddingHorizontal: 7, paddingVertical: 3 },
