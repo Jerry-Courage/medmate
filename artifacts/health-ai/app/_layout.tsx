@@ -6,11 +6,11 @@ import {
   Inter_500Medium,
   Inter_600SemiBold,
   Inter_700Bold,
-  useFonts,
 } from '@expo-google-fonts/inter';
+import * as Font from 'expo-font';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import React from 'react';
+import React, { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { router, Stack } from 'expo-router';
@@ -47,25 +47,31 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-  });
+  const [fontsReady, setFontsReady] = useState(Platform.OS === 'web');
 
   useEffect(() => {
     if (Platform.OS === 'web') {
-      // On web, hide the splash screen immediately — don't wait for fonts.
       SplashScreen.hideAsync().catch(() => {});
-    } else if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {});
+      return;
     }
-  }, [fontsLoaded, fontError]);
+    // Load fonts with graceful fallback — a CDN timeout must not crash the app.
+    Font.loadAsync({
+      Inter_400Regular,
+      Inter_500Medium,
+      Inter_600SemiBold,
+      Inter_700Bold,
+    })
+      .catch(() => {
+        // Timeout or network error: fall back to system fonts silently.
+      })
+      .finally(() => {
+        setFontsReady(true);
+        SplashScreen.hideAsync().catch(() => {});
+      });
+  }, []);
 
-  // On web: always render (system fonts fallback is fine).
-  // On native: wait for fonts (or a font error) so we don't flash unstyled text.
-  if (Platform.OS !== 'web' && !fontsLoaded && !fontError) return null;
+  // On native: render only once fonts attempted (loaded or failed gracefully).
+  if (!fontsReady) return null;
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
