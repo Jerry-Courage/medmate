@@ -1,4 +1,4 @@
-import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth } from '@clerk/expo';
 import { tokenCache } from '@clerk/expo/token-cache';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -35,33 +35,14 @@ const queryClient = new QueryClient();
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 const proxyUrl = process.env.EXPO_PUBLIC_CLERK_PROXY_URL || undefined;
 
-/** Watches Clerk auth state and redirects whenever it changes */
-function AuthGate() {
-  const { isSignedIn, isLoaded } = useAuth();
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    if (isSignedIn) {
-      router.replace('/(tabs)');
-    } else {
-      router.replace('/onboarding');
-    }
-  }, [isSignedIn, isLoaded]);
-
-  return null;
-}
-
 function RootLayoutNav() {
   return (
-    <>
-      <AuthGate />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
-    </>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }
 
@@ -88,23 +69,21 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache} proxyUrl={proxyUrl}>
-      <ClerkLoaded>
-        <SafeAreaProvider>
-          <ErrorBoundary>
-            <QueryClientProvider client={queryClient}>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                {Platform.OS === 'web' ? (
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              {Platform.OS === 'web' ? (
+                <RootLayoutNav />
+              ) : (
+                <KeyboardProvider>
                   <RootLayoutNav />
-                ) : (
-                  <KeyboardProvider>
-                    <RootLayoutNav />
-                  </KeyboardProvider>
-                )}
-              </GestureHandlerRootView>
-            </QueryClientProvider>
-          </ErrorBoundary>
-        </SafeAreaProvider>
-      </ClerkLoaded>
+                </KeyboardProvider>
+              )}
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
     </ClerkProvider>
   );
 }
