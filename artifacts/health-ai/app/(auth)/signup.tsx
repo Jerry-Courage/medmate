@@ -38,7 +38,7 @@ function InputField({
       style={[
         styles.inputWrap,
         {
-          backgroundColor: '#fff',
+          backgroundColor: colors.card,
           borderColor: focused ? colors.primary : colors.border,
         },
       ]}
@@ -51,7 +51,13 @@ function InputField({
       />
       <TextInput
         ref={inputRef}
-        style={[styles.input, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}
+        style={{
+          flex: 1,
+          fontSize: 15,
+          height: 54,
+          color: colors.foreground,
+          fontFamily: 'Inter_400Regular',
+        }}
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         value={value}
@@ -138,7 +144,7 @@ export default function SignupScreen() {
   // ── Verification screen ──────────────────────────────────────────────────
   if (pendingVerification) {
     return (
-      <View style={[styles.root, { backgroundColor: '#F0FDF4' }]}>
+      <View style={[styles.root, { backgroundColor: colors.background }]}>
         <LinearGradient
           colors={[colors.gradientStart, colors.gradientEnd]}
           style={[styles.header, { paddingTop: topPad + 12 }]}
@@ -222,7 +228,7 @@ export default function SignupScreen() {
 
   // ── Sign-up form ─────────────────────────────────────────────────────────
   return (
-    <View style={[styles.root, { backgroundColor: '#F0FDF4' }]}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
@@ -246,13 +252,13 @@ export default function SignupScreen() {
         <Text style={styles.headerSubtitle}>Your health journey starts here</Text>
       </LinearGradient>
 
-      {/* White curve overlap */}
-      <View style={[styles.curve, { backgroundColor: '#F0FDF4' }]}>
-        <View style={[styles.curveInner, { backgroundColor: '#fff' }]} />
+      {/* Curve connector */}
+      <View style={[styles.curve, { backgroundColor: colors.background }]}>
+        <View style={[styles.curveInner, { backgroundColor: colors.card }]} />
       </View>
 
       <KeyboardAwareScrollViewCompat
-        style={[styles.scroll, { backgroundColor: '#fff' }]}
+        style={[styles.scroll, { backgroundColor: colors.card }]}
         contentContainerStyle={[styles.formContent, { paddingBottom: bottomPad + 24 }]}
         bottomOffset={60}
       >

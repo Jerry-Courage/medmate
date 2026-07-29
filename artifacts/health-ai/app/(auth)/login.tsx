@@ -38,7 +38,7 @@ function InputField({
       style={[
         styles.inputWrap,
         {
-          backgroundColor: '#fff',
+          backgroundColor: colors.card,
           borderColor: focused ? colors.primary : colors.border,
         },
       ]}
@@ -51,7 +51,13 @@ function InputField({
       />
       <TextInput
         ref={inputRef}
-        style={[styles.input, { color: colors.foreground, fontFamily: 'Inter_400Regular' }]}
+        style={{
+          flex: 1,
+          fontSize: 15,
+          height: 54,
+          color: colors.foreground,
+          fontFamily: 'Inter_400Regular',
+        }}
         placeholder={placeholder}
         placeholderTextColor={colors.mutedForeground}
         value={value}
@@ -111,7 +117,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={[styles.root, { backgroundColor: '#F0FDF4' }]}>
+    <View style={[styles.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientEnd]}
@@ -136,14 +142,14 @@ export default function LoginScreen() {
         <Text style={styles.headerSubtitle}>Sign in to continue with Medmate</Text>
       </LinearGradient>
 
-      {/* White curve connector */}
-      <View style={[styles.curve, { backgroundColor: '#F0FDF4' }]}>
-        <View style={[styles.curveInner, { backgroundColor: '#fff' }]} />
+      {/* Curve connector */}
+      <View style={[styles.curve, { backgroundColor: colors.background }]}>
+        <View style={[styles.curveInner, { backgroundColor: colors.card }]} />
       </View>
 
       {/* Form */}
       <KeyboardAwareScrollViewCompat
-        style={[styles.scroll, { backgroundColor: '#fff' }]}
+        style={[styles.scroll, { backgroundColor: colors.card }]}
         contentContainerStyle={[styles.formContent, { paddingBottom: bottomPad + 24 }]}
         bottomOffset={60}
       >
