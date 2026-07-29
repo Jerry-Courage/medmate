@@ -15,8 +15,13 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { router, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { setBaseUrl } from '@workspace/api-client-react';
 
 SplashScreen.preventAutoHideAsync();
+
+// Point the API client at the dev/prod server domain
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+if (domain) setBaseUrl(`https://${domain}`);
 
 const queryClient = new QueryClient();
 

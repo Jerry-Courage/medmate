@@ -1,13 +1,25 @@
 import { useColors } from '@/hooks/useColors';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import { Platform, StyleSheet, View } from 'react-native';
+import { useAuth } from '@clerk/expo';
+import { useEffect } from 'react';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 
 export default function TabLayout() {
   const colors = useColors();
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
+  const { isSignedIn, getToken } = useAuth();
+
+  // Attach Clerk bearer token to every API request from the mobile app
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+
+  if (!isSignedIn) return <Redirect href="/onboarding" />;
 
   return (
     <Tabs

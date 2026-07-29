@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { getAuth } from "@clerk/express";
 import Groq from "groq-sdk";
 
 const router = Router();
@@ -17,7 +18,18 @@ Guidelines:
 - Keep replies concise (under 3 short paragraphs) unless the user asks for more detail.
 - Do not use markdown formatting like ** or ## — plain text only.`;
 
-router.post("/chat", async (req, res) => {
+function requireAuth(req: any, res: any, next: any) {
+  const auth = getAuth(req);
+  const userId = auth?.sessionClaims?.userId || auth?.userId;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  req.userId = userId;
+  next();
+}
+
+router.post("/chat", requireAuth, async (req, res) => {
   try {
     const { messages } = req.body as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
