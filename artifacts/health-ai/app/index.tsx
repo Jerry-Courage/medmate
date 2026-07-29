@@ -1,11 +1,11 @@
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@clerk/expo';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function Index() {
-  const { user, isLoading } = useAuth();
+  const { isSignedIn, isLoaded } = useAuth();
 
-  if (isLoading) {
+  if (!isLoaded) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
         <ActivityIndicator color="#22C55E" size="large" />
@@ -13,7 +13,7 @@ export default function Index() {
     );
   }
 
-  if (user) {
+  if (isSignedIn) {
     return <Redirect href="/(tabs)" />;
   }
 

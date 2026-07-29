@@ -1,4 +1,3 @@
-import { useAuth } from '@/context/AuthContext';
 import { useColors } from '@/hooks/useColors';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -48,7 +47,6 @@ const INITIAL_MESSAGES: Message[] = [
 export default function ChatScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
